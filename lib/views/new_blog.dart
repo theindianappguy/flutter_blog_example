@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:random_string/random_string.dart';
 
 class NewBlog extends StatefulWidget {
   @override
@@ -7,7 +11,40 @@ class NewBlog extends StatefulWidget {
 
 class _NewBlogState extends State<NewBlog> {
 
-  String authorName, title, desc;
+  String authorName = "", title = "", desc = "";
+
+  File selctedImage;
+
+  bool _loading = false;
+
+  Future getImage() async {
+    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+
+    setState(() {
+      selctedImage = image;
+    });
+  }
+
+  updateBlog() async {
+
+    if(selctedImage != null){
+
+    setState(() {
+      _loading = true;
+    });
+
+    // uploading image  to firebase storage
+      StorageReference blogImagesStorageReference = FirebaseStorage.instance.ref().child("blogImages").child("${randomAlphaNumeric(10)}.jpg");
+
+      final StorageUploadTask task = blogImagesStorageReference.putFile(selctedImage);
+
+      var downloadUrl = await (await task.onComplete).ref.getDownloadURL();
+
+      print(" $downloadUrl");
+
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +59,10 @@ class _NewBlogState extends State<NewBlog> {
         actions: <Widget>[
           GestureDetector(
             onTap: (){
-              print("$authorName $title $desc");
+
+              updateBlog();
+              setState(() {});
+              //print("$authorName $title $desc");
             },
             child: Container(
               padding: EdgeInsets.only(right: 16),
@@ -33,18 +73,32 @@ class _NewBlogState extends State<NewBlog> {
         elevation: 0.0,
       ),
 
-      body: Container(
+      body: _loading ? Container(
+        alignment: Alignment.center,
+        child: CircularProgressIndicator(),
+      ) : Container(
         margin: EdgeInsets.symmetric(vertical: 24),
         padding: EdgeInsets.symmetric(horizontal: 24),
         child: Column(children: <Widget>[
-          Container(
+          selctedImage == null ? GestureDetector(
+            onTap: (){
+              getImage();
+            },
+            child: Container(
+              height: 150,
+              width: MediaQuery.of(context).size.width,
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4)
+              ),
+              child: Icon(Icons.add_a_photo, color: Colors.grey,),
+            ),
+          )  :  Container(
             height: 150,
             width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4)
-            ),
-            child: Icon(Icons.add_a_photo, color: Colors.grey,),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+                child: Image.file(selctedImage, fit: BoxFit.cover,)),
           ),
           SizedBox(height: 8,),
           TextField(
@@ -73,6 +127,8 @@ class _NewBlogState extends State<NewBlog> {
                 hintText: "Desc"
             ),
           ),
+          SizedBox(height: 8,),
+          Text("$authorName $title $desc")
         ],),
       ),
     );

@@ -19,6 +19,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  image_picker: ^0.6.4
+  firebase_storage: ^3.1.5
+  cloud_firestore: ^0.13.4+2
+  random_string: ^2.0.1
 
 
   # The following adds the Cupertino Icons font to your application.
